@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "431124670739",
+    "project_id": "apna-gaur",
+    "storage_bucket": "apna-gaur.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:431124670739:android:86ec04974ec16ed2e5d2e6",
+        "android_client_info": {
+          "package_name": "com.example.apna_gaur"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDdPKjr7-jP8D_uqvnM3n4AjEccmhM128"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

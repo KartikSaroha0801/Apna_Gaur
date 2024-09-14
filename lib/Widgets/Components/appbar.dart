@@ -66,7 +66,7 @@ class _AppBARState extends State<AppBAR> {
               ),
             ),
             Spacer(),
-            Text(widget.title, style: TextStyle( fontSize: 16, color: Colors.black,),),
+            Text(widget.title, style: TextStyle( fontSize: 16, color: Colors.black, fontWeight: FontWeight.w700),),
             Spacer(),
             SizedBox(width: 45,),
           ],

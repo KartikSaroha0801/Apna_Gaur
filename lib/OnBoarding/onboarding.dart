@@ -32,7 +32,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void getStartedFunction() {
-    Get.to(() => SignUp());
+    Get.offAll(()=>SignUp());
   }
 
   @override

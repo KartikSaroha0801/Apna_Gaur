@@ -112,7 +112,7 @@ class _HomescreenState extends State<Homescreen> {
                 children: [
                   InkWell(
                     onTap: (){
-                      Get.to(UploadListing());
+                      Get.to(()=>FirstPage());
                     },
                     child: Container(
                       width: screenWidth*0.8,

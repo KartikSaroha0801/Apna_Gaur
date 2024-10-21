@@ -1,58 +1,19 @@
+import 'dart:io';
+import 'package:apna_gaur/Controller/additional_listing_controller.dart';
 import 'package:apna_gaur/Widgets/Components/appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:apna_gaur/Widgets/Components/appbar.dart';
+import 'package:image_picker/image_picker.dart';
 
-class AdditionalDetailsPage extends StatefulWidget {
-  const AdditionalDetailsPage({Key? key}) : super(key: key);
 
-  @override
-  _AdditionalDetailsPageState createState() => _AdditionalDetailsPageState();
-}
 
-class _AdditionalDetailsPageState extends State<AdditionalDetailsPage> {
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _carpetAreaController = TextEditingController();
-  final TextEditingController _floorNumberController = TextEditingController();
-  final TextEditingController _rentController = TextEditingController();
-  final TextEditingController _societyController = TextEditingController();
-  DateTime? _availableFrom;
-  String _facing = "East";
-  final List<String> _facingOptions = ["East", "West", "North", "South"];
-
-  Future<void> _submitForm() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? docId = prefs.getString('docId');
-    if (docId == null) {
-      Get.snackbar('Error', 'Document ID not found!');
-      return;
-    }
-
-    Map<String, dynamic> listingData = {
-      'Age of Property in Years': int.parse(_ageController.text),
-      'Available from': _availableFrom,
-      'Carpet Area': _carpetAreaController.text,
-      'Facing': _facing,
-      'Floor Number': int.parse(_floorNumberController.text),
-      'Rent': _rentController.text,
-      'Society': _societyController.text,
-    };
-
-    try {
-      await FirebaseFirestore.instance.collection('Rent_Flats').doc(docId).update(listingData);
-      Get.snackbar('Success', 'Listing updated successfully!');
-    } catch (e) {
-      Get.snackbar('Error', 'Failed to update listing: $e');
-    }
-  }
+class AdditionalDetailsPage extends StatelessWidget {
+  final AdditionalDetailsController controller =
+      Get.put(AdditionalDetailsController());
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -64,13 +25,13 @@ class _AdditionalDetailsPageState extends State<AdditionalDetailsPage> {
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16,),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Form(
-                        key: _formKey,
+                        key: controller.formKey,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(height: screenHeight * 0.03),
+                            SizedBox(height: 20),
                             Text(
                               'Fill in additional details for your Listing:',
                               style: TextStyle(
@@ -79,93 +40,142 @@ class _AdditionalDetailsPageState extends State<AdditionalDetailsPage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: screenHeight * 0.03),
-                                  
-                            // Age of Property
+                            SizedBox(height: 20),
+
+                            // Form Fields
                             _buildTextField(
                               label: 'Age of Property in Years',
-                              controller: _ageController,
+                              controller: controller.ageController,
                               keyboardType: TextInputType.number,
                               icon: Icons.calendar_today,
                             ),
-                                  
-                            // Carpet Area
                             _buildTextField(
                               label: 'Carpet Area (e.g., 1175 sq ft)',
-                              controller: _carpetAreaController,
+                              controller: controller.carpetAreaController,
                               icon: Icons.aspect_ratio,
                             ),
-                                  
-                            // Floor Number
                             _buildTextField(
                               label: 'Floor Number',
-                              controller: _floorNumberController,
+                              controller: controller.floorNumberController,
                               keyboardType: TextInputType.number,
                               icon: Icons.stairs,
                             ),
-                                  
-                            // Rent
                             _buildTextField(
                               label: 'Rent',
-                              controller: _rentController,
+                              controller: controller.rentController,
                               keyboardType: TextInputType.number,
                               icon: Icons.money,
                             ),
-                                  
-                            // Society
                             _buildTextField(
                               label: 'Society',
-                              controller: _societyController,
+                              controller: controller.societyController,
                               icon: Icons.location_city,
                             ),
-                                  
-                            // Available from (Date picker)
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                _availableFrom == null
-                                    ? 'Select Available Date'
-                                    : 'Available from: ${_availableFrom!.toLocal().toString().split(' ')[0]}',
-                                style: TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              trailing: Icon(Icons.calendar_today, color: Colors.black54),
-                              onTap: _pickAvailableDate,
-                            ),
-                            SizedBox(height: 20),
-                                  
-                            // Facing (Dropdown)
-                            DropdownButtonFormField<String>(
-                              value: _facing,
-                              decoration: InputDecoration(
-                                labelText: 'Facing',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              items: _facingOptions.map((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(value),
+                            SizedBox(height: 10),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: Obx(() {
+                                return DropdownButtonFormField<String>(
+                                  value: controller.facing.value,
+                                  items: controller.facingOptions
+                                      .map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  onChanged: (newValue) {
+                                    controller.setFacing(newValue!);
+                                  },
+                                  decoration: InputDecoration(
+                                    labelText: 'Facing',
+                                    prefixIcon: Icon(Icons.compass_calibration),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  isExpanded: true,
                                 );
-                              }).toList(),
-                              onChanged: (newValue) {
-                                setState(() {
-                                  _facing = newValue!;
-                                });
-                              },
+                              }),
                             ),
+                            ListTile(
+                                  title: Text(
+                                    controller.availableFrom == null
+                                      ? 'Select Available Date'
+                                        : 'Available from: ${controller.availableFrom!.toLocal().toString().split(' ')[0]}',
+                                  style: TextStyle(fontSize: 18),
+                                  ),
+                              trailing: Icon(Icons.calendar_today),
+                                  onTap: () =>
+                                      controller.pickAvailableDate(context),
+                            ),
+
+
+                            // Image picker buttons
+                            Row(
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () =>
+                                      controller.pickImage(ImageSource.gallery),
+                                  icon: Icon(Icons.photo_library),
+                                  label: Text('Pick from Gallery'),
+                                ),
+                                SizedBox(width: 10),
+                                ElevatedButton.icon(
+                                  onPressed: () =>
+                                      controller.pickImage(ImageSource.camera),
+                                  icon: Icon(Icons.camera),
+                                  label: Text('Take Photo'),
+                                ),
+                              ],
+                            ),
+
+                            SizedBox(height: 10),
+
+                            // Display selected images
+                            Obx(() {
+                              return controller.imageFiles.isNotEmpty
+                                  ? SizedBox(
+                                      height: 100,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: controller.imageFiles.length,
+                                        itemBuilder: (context, index) {
+                                          return Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Image.file(
+                                              File(controller
+                                                  .imageFiles[index].path),
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : Text("No images selected");
+                            }),
+
                             SizedBox(height: 30),
-                                  
+
                             // Submit Button
                             GestureDetector(
-                              onTap: _submitForm,
+                              onTap: () {
+                                if (controller.formKey.currentState!
+                                    .validate()) {
+                                  // Validate using the widget's form key
+                                  controller.submitForm();
+                                }
+                              },
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Container(
-                                    width: screenWidth * 0.6,
-                                    height: screenHeight * 0.06,
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.6,
+                                    height: MediaQuery.of(context).size.height *
+                                        0.06,
                                     decoration: BoxDecoration(
                                       color: Colors.black,
                                       borderRadius: BorderRadius.circular(29),
@@ -176,7 +186,6 @@ class _AdditionalDetailsPageState extends State<AdditionalDetailsPage> {
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 21,
-                                          fontFamily: 'Lato',
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -225,19 +234,5 @@ class _AdditionalDetailsPageState extends State<AdditionalDetailsPage> {
         },
       ),
     );
-  }
-
-  Future<void> _pickAvailableDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2023),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        _availableFrom = picked;
-      });
-    }
   }
 }

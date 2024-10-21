@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:apna_gaur/Resuable_Widgets/search_bar.dart'; 
+import 'package:apna_gaur/Resuable_Widgets/search_bar.dart';
 import 'package:apna_gaur/UserFlow/rent_flow/flat_detail_page.dart';
+import 'package:lottie/lottie.dart';
+import 'package:shimmer/shimmer.dart';
 
 class Flat {
   final String bhk;
@@ -30,7 +32,7 @@ class Flat {
 
   factory Flat.fromJson(Map<String, dynamic> json) {
     return Flat(
-      bhk: json['Bhk'] ?? 'Not specified',
+      bhk: json['BHK'] ?? 'Not specified',
       images: json['Image'] != null ? List<String>.from(json['Image']) : [],
       rent: json['Rent'] != null ? int.tryParse(json['Rent'].toString()) : null,
       society: json['Society'] ?? 'Not specified',
@@ -61,19 +63,27 @@ class _RentScreenState extends State<RentScreen> {
     flatsFuture = fetchFlats(); // Fetch all flats by default
   }
 
-  Future<List<Flat>> fetchFlats({String searchQuery = ''}) async {
-    Query query = FirebaseFirestore.instance.collection('Rent_Flats');
-    if (searchQuery.isNotEmpty) {
-      query = query.where('Society', isGreaterThanOrEqualTo: searchQuery);
-    }
-    final QuerySnapshot querySnapshot = await query.get();
-    final List<Flat> flats = [];
-    for (var doc in querySnapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      flats.add(Flat.fromJson(data));
-    }
-    return flats;
+ Future<List<Flat>> fetchFlats({String searchQuery = ''}) async {
+  Query query = FirebaseFirestore.instance.collection('Rent_Flats');
+  
+  if (searchQuery.isNotEmpty) {
+    String searchKey = searchQuery.toLowerCase();
+    
+    // Fetch results where the 'Society' starts with the search query (case-insensitive)
+    query = query
+      .where('Society', isGreaterThanOrEqualTo: searchKey)
+      .where('Society', isLessThanOrEqualTo: searchKey + '\uf8ff'); // \uf8ff is a high Unicode character to extend the range
   }
+  
+  final QuerySnapshot querySnapshot = await query.get();
+  final List<Flat> flats = [];
+  for (var doc in querySnapshot.docs) {
+    final data = doc.data() as Map<String, dynamic>;
+    flats.add(Flat.fromJson(data));
+  }
+  return flats;
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -82,14 +92,15 @@ class _RentScreenState extends State<RentScreen> {
         child: Column(
           children: [
             SearchBarWidget(
-              hintText: "Search...",
-              onSearch: (value) {
-                setState(() {
-                  searchQuery = value;
-                  flatsFuture = fetchFlats(searchQuery: value);
-                });
-              },
-            ),
+  hintText: "Search by Society...",
+  onSearch: (value) {
+    setState(() {
+      searchQuery = value.toLowerCase(); // Convert to lowercase for consistent searching
+      flatsFuture = fetchFlats(searchQuery: searchQuery);
+    });
+  },
+),
+
             Expanded(
               child: FutureBuilder<List<Flat>>(
                 future: flatsFuture,
@@ -148,8 +159,30 @@ class _RentScreenState extends State<RentScreen> {
                                 children: [
                                   Expanded(
                                     child: flat.images.isNotEmpty
-                                        ? Image.network(flat.images[0], fit: BoxFit.cover, width: double.infinity)
-                                        : const Placeholder(),
+                                        ? Image.network(
+                                            flat.images[0],
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            loadingBuilder: (BuildContext context, Widget child,
+                                                ImageChunkEvent? loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return Shimmer.fromColors(
+                                                baseColor: Colors.grey[300]!,
+                                                highlightColor: Colors.grey[100]!,
+                                                child: Container(
+                                                  color: Colors.grey[300],
+                                                ),
+                                              );
+                                            },
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                child: Lottie.asset("assets/images/home_n_animation.json"),
+                                              );
+                                            },
+                                          )
+                                        : Container(
+                                                child: Lottie.asset("assets/images/home_n_animation.json"),
+                                              ),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.all(8.0),
